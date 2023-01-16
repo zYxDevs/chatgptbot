@@ -30,34 +30,35 @@ async def start_handler(event):
 # Handle all other messages
 @client.on(telethon.events.NewMessage)
 async def message_handler(event):
-    if event.message.message.strip().startswith("/ask"):
-        # Send message to notify user that response is being generated
-        generating_message = await event.reply("generating response...")
+    if not event.message.message.strip().startswith("/ask"):
+        return
+    # Send message to notify user that response is being generated
+    generating_message = await event.reply("generating response...")
 
-        # Get the message text
-        message_text = event.message.message.strip().replace("/ask","",1).strip()
+    # Get the message text
+    message_text = event.message.message.strip().replace("/ask","",1).strip()
 
-        while True:
-            try:
-                # Pass event object to callback function
-                response = openai.Completion.create(
-                    engine="text-davinci-002",
-                    prompt=f"{message_text}\n",
-                    max_tokens=2048,
-                    n=1,
-                    stop=None,
-                    temperature=0.5,
-                )
-                break
-            except openai.exceptions.OpenAiError as e:
-                if 'Usage Limit Exceeded' in str(e):
-                    switch_api_key()
-                else:
-                    raise e
+    while True:
+        try:
+            # Pass event object to callback function
+            response = openai.Completion.create(
+                engine="text-davinci-002",
+                prompt=f"{message_text}\n",
+                max_tokens=2048,
+                n=1,
+                stop=None,
+                temperature=0.5,
+            )
+            break
+        except openai.exceptions.OpenAiError as e:
+            if 'Usage Limit Exceeded' in str(e):
+                switch_api_key()
+            else:
+                raise e
 
-        link = handle_response(event, response)
-        await event.reply(link)
-        await generating_message.delete()
+    link = handle_response(event, response)
+    await event.reply(link)
+    await generating_message.delete()
 
 # /stats command
 #@client.on(telethon.events.NewMessage(pattern='/stats'))
